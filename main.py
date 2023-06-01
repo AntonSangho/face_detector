@@ -7,45 +7,49 @@ scaler = 0.3
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
 
-# load video
+# 1. load video
 cap = cv2.VideoCapture('samples/girl.mp4')
 # load overlay image
 overlay = cv2.imread('samples/ryan_transparent.png', cv2.IMREAD_UNCHANGED)
 
 # overlay function
 def overlay_transparent(background_img, img_to_overlay_t, x, y, overlay_size=None):
-  bg_img = background_img.copy()
-  # convert 3 channels to 4 channels
-  if bg_img.shape[2] == 3:
-    bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGR2BGRA)
+  try:
+    bg_img = background_img.copy()
+    # convert 3 channels to 4 channels
+    if bg_img.shape[2] == 3:
+      bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGR2BGRA)
 
-  if overlay_size is not None:
-    img_to_overlay_t = cv2.resize(img_to_overlay_t.copy(), overlay_size)
+    if overlay_size is not None:
+      img_to_overlay_t = cv2.resize(img_to_overlay_t.copy(), overlay_size)
 
-  b, g, r, a = cv2.split(img_to_overlay_t)
+    b, g, r, a = cv2.split(img_to_overlay_t)
 
-  mask = cv2.medianBlur(a, 5)
+    mask = cv2.medianBlur(a, 5)
 
-  h, w, _ = img_to_overlay_t.shape
-  roi = bg_img[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)]
+    h, w, _ = img_to_overlay_t.shape
+    roi = bg_img[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)]
 
-  img1_bg = cv2.bitwise_and(roi.copy(), roi.copy(), mask=cv2.bitwise_not(mask))
-  img2_fg = cv2.bitwise_and(img_to_overlay_t, img_to_overlay_t, mask=mask)
+    img1_bg = cv2.bitwise_and(roi.copy(), roi.copy(), mask=cv2.bitwise_not(mask))
+    img2_fg = cv2.bitwise_and(img_to_overlay_t, img_to_overlay_t, mask=mask)
 
-  bg_img[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)] = cv2.add(img1_bg, img2_fg)
+    bg_img[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)] = cv2.add(img1_bg, img2_fg)
 
-  # convert 4 channels to 4 channels
-  bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGRA2BGR)
+    # convert 4 channels to 4 channels
+    bg_img = cv2.cvtColor(bg_img, cv2.COLOR_BGRA2BGR)
 
-  return bg_img
+    return bg_img
+  except Exception:return background_img
 
 face_roi = []
 face_sizes = []
 
 # loop
+# 2. 비디오를 계속 프레임 단위로 읽어야하므로
 while True:
   # read frame buffer from video
   ret, img = cap.read()
+  # 프레임이 없으면 종료 
   if not ret:
     break
 
@@ -78,7 +82,8 @@ while True:
       cv2.circle(img, center=tuple(s), radius=1, color=(255, 255, 255), thickness=2, lineType=cv2.LINE_AA)
 
     # compute face center
-    center_x, center_y = np.mean(shape_2d, axis=0).astype(np.int)
+    #center_x, center_y = np.mean(shape_2d, axis=0).astype(np.int)
+    center_x, center_y = np.mean(shape_2d, axis=0).astype(np.int32)
 
     # compute face boundaries
     min_coords = np.min(shape_2d, axis=0)
